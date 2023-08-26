@@ -9,7 +9,7 @@ router = APIRouter()
 dao = Dao()
 
 
-@router.post("/auth", tags=["auth"])
+@router.post("/auth", tags=["Authentication Service"])
 async def authenticate(request: LoginRequest) -> LoginResponse:
 
     user = dao.get_user(request.username)
