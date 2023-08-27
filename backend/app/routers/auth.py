@@ -15,6 +15,12 @@ dao = Dao()
 
 @router.post("/auth", tags=["Authentication Service"])
 async def authenticate(request: LoginRequest) -> LoginResponse:
+    """
+    Authenticate a registered user to receive a token.
+
+    - **username**: username to authenticate
+    - **password**: password to use.
+    """
 
     user = dao.get_user(request.username)
 
@@ -34,7 +40,16 @@ async def authenticate(request: LoginRequest) -> LoginResponse:
 
 @router.post("/auth/register", tags=["Authentication Service"])
 async def register(user: User) -> User:
+    """
+    Register a user with the system.
 
+    - **firstName**: first name for the user.
+    - **lastName**: last name for the user.
+    - **username**: username/email for the user.
+    - **passwd**: password for the user.
+
+    All other fields are ignored during user creation and provided back once user is created.
+    """
     try:
         result = dao.create_user(user)
     except DuplicateDataError:

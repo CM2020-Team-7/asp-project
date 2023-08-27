@@ -5,10 +5,11 @@ from pydantic import BaseModel
 
 
 class Lesson(BaseModel):
-    id: Union[int, None] = None
-    ownerId: Union[int, None] = None
     moduleId: int
     title: str
     content: str
+
+    id: Union[int, None] = None
+    ownerId: Union[int, None] = None
     createdOn: Union[datetime.datetime, None] = None
     lastModified: Union[datetime.datetime, None] = None

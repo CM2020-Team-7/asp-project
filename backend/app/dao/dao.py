@@ -18,6 +18,7 @@ SELECT_PLAN_ROWID = 'select * from plan where rowid = ?'
 INSERT_PLAN = 'INSERT INTO Plan ("ownerId", "title") VALUES (?, ?)'
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
+SELECT_MODULES = 'select * from module where ownerId = ?'
 INSERT_MODULE = 'INSERT INTO Module ("ownerId", "title") VALUES (?, ?)'
 ASSOCIATE_MODULE = (
     'INSERT INTO ModulePlanAssociation ("planId", "moduleId") VALUES (?, ?)'
@@ -27,6 +28,7 @@ SELECT_LESSON_ROWID = 'select * from lesson where rowid = ?'
 INSERT_LESSON = (
     'INSERT INTO Lesson ("ownerId", "moduleId", "title", "content") VALUES (?, ?, ?, ?)'
 )
+SELECT_MODULE_LESSONS = 'select * from lesson where moduleId = ?'
 
 
 class Dao:
@@ -60,21 +62,31 @@ class Dao:
         else:
             return None
 
-    def create_plan(
-        self, owner_id: int, title: str, modules: Optional[List[int]]
-    ) -> Plan:
-        row_id = self.__write_data(INSERT_PLAN, (owner_id, title))
+    def create_plan(self, plan: Plan) -> Plan:
+        row_id = self.__write_data(INSERT_PLAN, (plan.ownerId, plan.title))
 
-        if modules and len(modules) > 0:
-            self.associate_modules_to_plan(row_id, modules)
+        if plan.modules and len(plan.modules) > 0:
+            self.associate_modules_to_plan(row_id, plan.modules)
 
         result = self.__get_row(SELECT_PLAN_ROWID, (row_id,))
         return Plan(**dict(result))
 
-    def create_module(self, owner_id: int, title: str) -> Module:
-        row_id = self.__write_data(INSERT_MODULE, (owner_id, title))
+    def create_module(self, module: Module) -> Module:
+        row_id = self.__write_data(INSERT_MODULE, (module.ownerId, module.title))
         result = self.__get_row(SELECT_MODULE_ROWID, (row_id,))
         return Module(**dict(result))
+
+    def get_user_modules(self, user_id: str) -> List[Module]:
+        results = self.__get_rows(SELECT_MODULES, (user_id,))
+        modules = []
+        if results:
+            for row in results:
+                module = Module(**dict(row))
+                lessons = self.get_module_lessons(module.id)
+                if lessons:
+                    module.lessons = lessons
+                modules.append(module)
+        return modules
 
     def create_lesson(self, lesson: Lesson) -> Lesson:
         row_id = self.__write_data(
@@ -83,6 +95,13 @@ class Dao:
         )
         result = self.__get_row(SELECT_LESSON_ROWID, (row_id,))
         return Lesson(**dict(result))
+
+    def get_module_lessons(self, module_id: int) -> Union[List[Lesson], None]:
+        stored_lessons = None
+        result = self.__get_rows(SELECT_MODULE_LESSONS, (module_id,))
+        if result:
+            stored_lessons = [Lesson(**dict(row)) for row in result]
+        return stored_lessons
 
     def associate_modules_to_plan(self, plan_id: int, module_id_list: List[int]):
         data = [(plan_id, module_id) for module_id in module_id_list]
@@ -109,4 +128,12 @@ class Dao:
         result: Union[None, sqlite3.Row] = None
         cur = self.__get_cursor().execute(query, params)
         result = cur.fetchone()
+        return result
+
+    def __get_rows(
+        self, query: str, params: Tuple[Any] = ()
+    ) -> Union[None, List[sqlite3.Row]]:
+        result: Union[None, sqlite3.Row] = None
+        cur = self.__get_cursor().execute(query, params)
+        result = cur.fetchall()
         return result
