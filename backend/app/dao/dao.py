@@ -9,7 +9,9 @@ from ..models.user import User
 
 DATA_ROOT = os.path.join(os.path.dirname(__file__), '../../db')
 
+SELECT_USER_ROWID = 'select * from user where rowid = ?'
 SELECT_USER = 'select * from user where username = ?'
+INSERT_USER = 'INSERT INTO User ("firstName", "lastName", "username", "passwd") VALUES (?, ?, ?, ?)'
 
 SELECT_PLAN_ROWID = 'select * from plan where rowid = ?'
 INSERT_PLAN = 'INSERT INTO Plan ("ownerId", "title") VALUES (?, ?)'
@@ -33,6 +35,14 @@ class Dao:
         self.conn = self.__connect()
         self.conn.row_factory = sqlite3.Row
 
+    def create_user(self, user: User) -> User:
+        row_id = self.__write_data(
+            INSERT_USER,
+            (user.firstName, user.lastName, user.username, user.get_hashed_password()),
+        )
+        result = self.__get_row(SELECT_USER_ROWID, (row_id,))
+        return User(**dict(result))
+
     def get_user(self, username: str) -> Union[None, User]:
         result = self.__get_row(SELECT_USER, (username,))
         if result:
@@ -44,7 +54,6 @@ class Dao:
         self, owner_id: int, title: str, modules: Optional[List[int]]
     ) -> Plan:
         row_id = self.__write_data(INSERT_PLAN, (owner_id, title))
-        assert isinstance(row_id, int), 'Did not receive row_id from INSERT call.'
 
         if modules and len(modules) > 0:
             self.associate_modules_to_plan(row_id, modules)
@@ -54,8 +63,6 @@ class Dao:
 
     def create_module(self, owner_id: int, title: str) -> Module:
         row_id = self.__write_data(INSERT_MODULE, (owner_id, title))
-        assert isinstance(row_id, int), 'Did not receive row_id from INSERT call.'
-
         result = self.__get_row(SELECT_MODULE_ROWID, (row_id,))
         return Module(**dict(result))
 
@@ -64,8 +71,6 @@ class Dao:
             INSERT_LESSON,
             (lesson.ownerId, lesson.moduleId, lesson.title, lesson.content),
         )
-        assert isinstance(row_id, int), 'Did not receive row_id from INSERT call.'
-
         result = self.__get_row(SELECT_LESSON_ROWID, (row_id,))
         return Lesson(**dict(result))
 
@@ -83,8 +88,9 @@ class Dao:
 
     def __write_data(self, query: str, params: Tuple[Any] = ()) -> int:
         cur = self.__get_cursor().execute(query, params)
-        cur.connection.commit()
         row_id = cur.lastrowid
+        assert isinstance(row_id, int), 'Did not receive row_id from INSERT call.'
+        cur.connection.commit()
         return row_id
 
     def __get_row(
