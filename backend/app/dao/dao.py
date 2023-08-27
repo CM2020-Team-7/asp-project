@@ -6,6 +6,7 @@ from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
 from ..models.user import User
+from .exceptions import DuplicateDataError
 
 DATA_ROOT = os.path.join(os.path.dirname(__file__), '../../db')
 
@@ -36,12 +37,21 @@ class Dao:
         self.conn.row_factory = sqlite3.Row
 
     def create_user(self, user: User) -> User:
-        row_id = self.__write_data(
-            INSERT_USER,
-            (user.firstName, user.lastName, user.username, user.get_hashed_password()),
-        )
-        result = self.__get_row(SELECT_USER_ROWID, (row_id,))
-        return User(**dict(result))
+        try:
+            row_id = self.__write_data(
+                INSERT_USER,
+                (
+                    user.firstName,
+                    user.lastName,
+                    user.username,
+                    user.get_hashed_password(),
+                ),
+            )
+        except sqlite3.IntegrityError as err:
+            if "UNIQUE constraint failed: User.username" in str(err):
+                raise DuplicateDataError("username already exists.")
+
+        return User(**dict(self.__get_row(SELECT_USER_ROWID, (row_id,))))
 
     def get_user(self, username: str) -> Union[None, User]:
         result = self.__get_row(SELECT_USER, (username,))
