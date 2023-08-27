@@ -1,9 +1,13 @@
+import sqlite3
+
 from fastapi import APIRouter, HTTPException, status
 
 from ..auth.jwt_token_tools import get_auth_token
 from ..dao.dao import Dao
+from ..dao.exceptions import DuplicateDataError
 from ..models.login_request import LoginRequest
 from ..models.login_response import LoginResponse
+from ..models.user import User
 
 router = APIRouter()
 dao = Dao()
@@ -26,3 +30,16 @@ async def authenticate(request: LoginRequest) -> LoginResponse:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Password provided does not match user.",
         )
+
+
+@router.post("/auth/register", tags=["Authentication Service"])
+async def register(user: User) -> User:
+
+    try:
+        result = dao.create_user(user)
+    except DuplicateDataError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"User with username [{user.username}] already exists.",
+        )
+    return result
