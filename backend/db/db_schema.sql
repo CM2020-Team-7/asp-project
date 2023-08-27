@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS ModulePlanAssociation (
     planId INT NOT NULL,
     moduleId INT NOT NULL,
     FOREIGN KEY (planId) REFERENCES Plan(id),
-    FOREIGN KEY (moduleId) REFERENCES Module(id)
+    FOREIGN KEY (moduleId) REFERENCES Module(id),
+    UNIQUE(planId, moduleId)
 );
 
 CREATE TABLE IF NOT EXISTS Enrollment (
