@@ -15,7 +15,9 @@ SELECT_USER = 'select * from user where username = ?'
 INSERT_USER = 'INSERT INTO User ("firstName", "lastName", "username", "passwd") VALUES (?, ?, ?, ?)'
 
 SELECT_PLAN_ROWID = 'select * from plan where rowid = ?'
+SELECT_PLANS = 'select * from plan where ownerId = ?'
 INSERT_PLAN = 'INSERT INTO Plan ("ownerId", "title") VALUES (?, ?)'
+SELECT_PLAN_MODULE_IDS = 'select moduleId from ModulePlanAssociation where planId = ?'
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
 SELECT_MODULES = 'select * from module where ownerId = ?'
@@ -71,6 +73,18 @@ class Dao:
         result = self.__get_row(SELECT_PLAN_ROWID, (row_id,))
         return Plan(**dict(result))
 
+    def get_user_plans(self, user_id: str) -> List[Plan]:
+        results = self.__get_rows(SELECT_PLANS, (user_id,))
+        plans = []
+        if results:
+            for row in results:
+                plan = Plan(**dict(row))
+                modules = self.get_plan_module_id_list(plan.id)
+                if modules:
+                    plan.modules = modules
+                plans.append(plan)
+        return plans
+
     def create_module(self, module: Module) -> Module:
         row_id = self.__write_data(INSERT_MODULE, (module.ownerId, module.title))
         result = self.__get_row(SELECT_MODULE_ROWID, (row_id,))
@@ -102,6 +116,13 @@ class Dao:
         if result:
             stored_lessons = [Lesson(**dict(row)) for row in result]
         return stored_lessons
+
+    def get_plan_module_id_list(self, plan_id: int) -> Union[List[int], None]:
+        id_list = None
+        result = self.__get_rows(SELECT_PLAN_MODULE_IDS, (plan_id,))
+        if result:
+            id_list = [row["moduleId"] for row in result]
+        return id_list
 
     def associate_modules_to_plan(self, plan_id: int, module_id_list: List[int]):
         data = [(plan_id, module_id) for module_id in module_id_list]

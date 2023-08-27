@@ -29,6 +29,18 @@ async def create_plan(plan: Plan, token: str) -> Plan:
     return result
 
 
+@router.get("/content/plans", tags=["Content Service"])
+async def get_user_plans(token: str) -> List[Plan]:
+    """
+    Get a list of plans for the userId provided in the token.
+
+    - **token**: valid token from auth request.
+    """
+    user_id = verify_and_read_token(token)
+    result = dao.get_user_plans(user_id)
+    return result
+
+
 @router.get("/content/modules", tags=["Content Service"])
 async def get_user_modules(token: str) -> List[Module]:
     """
@@ -72,11 +84,4 @@ async def create_lesson(lesson: Lesson, token: str) -> Lesson:
     user_id = verify_and_read_token(token)
     lesson.ownerId = user_id
     result = dao.create_lesson(lesson)
-
-    if result:
-        return result
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to create lesson.",
-        )
+    return result
