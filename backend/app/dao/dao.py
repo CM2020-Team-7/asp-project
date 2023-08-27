@@ -65,6 +65,23 @@ class Dao:
 
         return User(**dict(self.__get_row(SELECT_USER_ROWID, (row_id,))))
 
+    def create_user(self, user: User) -> User:
+        try:
+            row_id = self.__write_data(
+                INSERT_USER,
+                (
+                    user.firstName,
+                    user.lastName,
+                    user.username,
+                    user.get_hashed_password(),
+                ),
+            )
+        except sqlite3.IntegrityError as err:
+            if "UNIQUE constraint failed: User.username" in str(err):
+                raise DuplicateDataError("username already exists.")
+
+        return User(**dict(self.__get_row(SELECT_USER_ROWID, (row_id,))))
+
     def get_user(self, username: str) -> Union[None, User]:
         result = self.__get_row(SELECT_USER, (username,))
         if result:

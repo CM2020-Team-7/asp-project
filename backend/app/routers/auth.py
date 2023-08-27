@@ -1,5 +1,3 @@
-import sqlite3
-
 from fastapi import APIRouter, HTTPException, status
 
 from ..auth.jwt_token_tools import get_auth_token
