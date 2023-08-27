@@ -6,22 +6,31 @@ from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
 from ..models.user import User
-from .exceptions import DuplicateDataError
+from .exceptions import DuplicateDataError, InvalidPlanIdModuleIdAssociationError
 
 DATA_ROOT = os.path.join(os.path.dirname(__file__), '../../db')
 
+ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys=ON;'
 SELECT_USER_ROWID = 'select * from user where rowid = ?'
 SELECT_USER = 'select * from user where username = ?'
 INSERT_USER = 'INSERT INTO User ("firstName", "lastName", "username", "passwd") VALUES (?, ?, ?, ?)'
 
 SELECT_PLAN_ROWID = 'select * from plan where rowid = ?'
+SELECT_PLANS = 'select * from plan where ownerId = ?'
+SELECT_PLAN = 'select * from plan where id = ?'
 INSERT_PLAN = 'INSERT INTO Plan ("ownerId", "title") VALUES (?, ?)'
+SELECT_PLAN_MODULE_IDS = 'select moduleId from ModulePlanAssociation where planId = ?'
+UPDATE_PLAN = 'UPDATE Plan SET title = ? where id = ?'
+
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
 SELECT_MODULES = 'select * from module where ownerId = ?'
 INSERT_MODULE = 'INSERT INTO Module ("ownerId", "title") VALUES (?, ?)'
 ASSOCIATE_MODULE = (
     'INSERT INTO ModulePlanAssociation ("planId", "moduleId") VALUES (?, ?)'
+)
+DISASSOCIATE_MODULE = (
+    'DELETE FROM ModulePlanAssociation where planId = ? and moduleId = ?'
 )
 
 SELECT_LESSON_ROWID = 'select * from lesson where rowid = ?'
@@ -37,6 +46,24 @@ class Dao:
         self.database_file = file
         self.conn = self.__connect()
         self.conn.row_factory = sqlite3.Row
+        self.conn.execute(ENABLE_FOREIGN_KEYS)
+
+    def create_user(self, user: User) -> User:
+        try:
+            row_id = self.__write_data(
+                INSERT_USER,
+                (
+                    user.firstName,
+                    user.lastName,
+                    user.username,
+                    user.get_hashed_password(),
+                ),
+            )
+        except sqlite3.IntegrityError as err:
+            if "UNIQUE constraint failed: User.username" in str(err):
+                raise DuplicateDataError("username already exists.")
+
+        return User(**dict(self.__get_row(SELECT_USER_ROWID, (row_id,))))
 
     def create_user(self, user: User) -> User:
         try:
@@ -62,6 +89,17 @@ class Dao:
         else:
             return None
 
+    def get_plan(self, plan_id: int) -> Union[None, Plan]:
+        result = self.__get_row(SELECT_PLAN, (plan_id,))
+        if result:
+            plan = Plan(**dict(result))
+            module_list = self.get_plan_module_id_list(plan.id)
+            if module_list:
+                plan.modules = module_list
+            return plan
+        else:
+            return None
+
     def create_plan(self, plan: Plan) -> Plan:
         row_id = self.__write_data(INSERT_PLAN, (plan.ownerId, plan.title))
 
@@ -70,6 +108,39 @@ class Dao:
 
         result = self.__get_row(SELECT_PLAN_ROWID, (row_id,))
         return Plan(**dict(result))
+
+    def update_plan(self, plan: Plan) -> Plan:
+        self.__write_data(UPDATE_PLAN, (plan.title, plan.id))
+        self.update_plan_modules(plan.id, plan.modules)
+        return self.get_plan(plan.id)
+
+    def update_plan_modules(
+        self, plan_id: int, new_module_list: Union[List[int], None]
+    ) -> Union[List[int], None]:
+        existing_ids = self.get_plan_module_id_list(plan_id)
+        if not existing_ids:
+            self.associate_modules_to_plan(plan_id, new_module_list)
+        else:
+            delete_list = [id for id in existing_ids if id not in new_module_list]
+            new_list = [id for id in new_module_list if id not in existing_ids]
+            if len(delete_list) > 0:
+                self.disassociate_modules_from_plan(plan_id, delete_list)
+            if len(new_list) > 0:
+                self.associate_modules_to_plan(plan_id, new_list)
+
+        return self.get_plan_module_id_list(plan_id)
+
+    def get_user_plans(self, user_id: str) -> List[Plan]:
+        results = self.__get_rows(SELECT_PLANS, (user_id,))
+        plans = []
+        if results:
+            for row in results:
+                plan = Plan(**dict(row))
+                modules = self.get_plan_module_id_list(plan.id)
+                if modules:
+                    plan.modules = modules
+                plans.append(plan)
+        return plans
 
     def create_module(self, module: Module) -> Module:
         row_id = self.__write_data(INSERT_MODULE, (module.ownerId, module.title))
@@ -103,9 +174,34 @@ class Dao:
             stored_lessons = [Lesson(**dict(row)) for row in result]
         return stored_lessons
 
+    def get_plan_module_id_list(self, plan_id: int) -> Union[List[int], None]:
+        id_list = None
+        result = self.__get_rows(SELECT_PLAN_MODULE_IDS, (plan_id,))
+        if result:
+            id_list = [row["moduleId"] for row in result]
+        return id_list
+
     def associate_modules_to_plan(self, plan_id: int, module_id_list: List[int]):
         data = [(plan_id, module_id) for module_id in module_id_list]
-        self.__get_cursor().executemany(ASSOCIATE_MODULE, data)
+        try:
+            self.__get_cursor().executemany(ASSOCIATE_MODULE, data)
+        except sqlite3.IntegrityError as err:
+            if "FOREIGN KEY constraint failed" in str(err):
+                raise InvalidPlanIdModuleIdAssociationError(
+                    "Invalid planId to moduleId associaion provided."
+                )
+        self.conn.commit()
+        return True
+
+    def disassociate_modules_from_plan(self, plan_id: int, ids_to_remove: List[int]):
+        data = [(plan_id, module_id) for module_id in ids_to_remove]
+        try:
+            self.__get_cursor().executemany(DISASSOCIATE_MODULE, data)
+        except sqlite3.IntegrityError as err:
+            if "FOREIGN KEY constraint failed" in str(err):
+                raise InvalidPlanIdModuleIdAssociationError(
+                    "Invalid planId to moduleId associaion provided."
+                )
         self.conn.commit()
         return True
 

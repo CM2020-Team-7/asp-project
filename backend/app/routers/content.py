@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from ..auth.jwt_token_tools import verify_and_read_token
 from ..dao.dao import Dao
+from ..dao.exceptions import InvalidPlanIdModuleIdAssociationError
 from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
@@ -26,6 +27,63 @@ async def create_plan(plan: Plan, token: str) -> Plan:
     user_id = verify_and_read_token(token)
     plan.ownerId = user_id
     result = dao.create_plan(plan)
+    return result
+
+
+@router.put("/content/plans", tags=["Content Service"])
+async def update_plan(plan: Plan, token: str) -> Plan:
+    """
+    Update an existing plan to change title or modules.
+
+    - **token**: valid token from auth request.
+    - **planId**: id of the plan to update.
+    - **title**: Title of the plan to update.
+    - **modules** (Optional): Optionally provide a list of module IDs to associate with the plan.
+
+    All other fields are ignored when provided, and returned based on what is updated.
+    """
+    user_id = verify_and_read_token(token)
+
+    if not plan.id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="planId must be provided to update an existing plan.",
+        )
+
+    stored_plan = dao.get_plan(plan.id)
+
+    if not stored_plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Plan with provided ID does not exist.",
+        )
+
+    if stored_plan.ownerId != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User requesting update does not own plan provided.",
+        )
+
+    try:
+        result = dao.update_plan(plan)
+    except InvalidPlanIdModuleIdAssociationError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid planId to moduleId association provided, please check IDs and resend request.",
+        )
+
+    return result
+
+
+@router.get("/content/plans", tags=["Content Service"])
+async def get_user_plans(token: str) -> List[Plan]:
+    """
+    Get a list of plans for the userId provided in the token.
+
+    - **token**: valid token from auth request.
+    """
+    user_id = verify_and_read_token(token)
+    result = dao.get_user_plans(user_id)
     return result
 
 
@@ -72,11 +130,4 @@ async def create_lesson(lesson: Lesson, token: str) -> Lesson:
     user_id = verify_and_read_token(token)
     lesson.ownerId = user_id
     result = dao.create_lesson(lesson)
-
-    if result:
-        return result
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to create lesson.",
-        )
+    return result
