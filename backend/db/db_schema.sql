@@ -60,7 +60,8 @@ CREATE TABLE IF NOT EXISTS Enrollment (
     endDate TIMESTAMP,
     progress INT DEFAULT 0,
     FOREIGN KEY (userId) REFERENCES User(id),
-    FOREIGN KEY (planId) REFERENCES Plan(id)
+    FOREIGN KEY (planId) REFERENCES Plan(id),
+    UNIQUE(userId, planId)
 );
 
 

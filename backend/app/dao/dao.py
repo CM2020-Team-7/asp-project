@@ -2,6 +2,7 @@ import os
 import sqlite3
 from typing import Any, List, Optional, Tuple, Union
 
+from ..models.enrollment import Enrollment
 from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
@@ -39,6 +40,17 @@ INSERT_LESSON = (
 )
 SELECT_MODULE_LESSONS = 'select * from lesson where moduleId = ?'
 
+SELECT_ENROLLMENT_ROWID = 'select * from Enrollment where rowid = ?'
+INSERT_ENROLLMENT = (
+    'INSERT INTO Enrollment ("userId", "planId", "endDate") VALUES (?, ?, ?)'
+)
+UPDATE_ENROLLMENT = (
+    'Update Enrollment SET status = ?, endDate = ?, progress = ? where id = ?'
+)
+SELECT_ENROLLMENT = 'select * from Enrollment where id = ?'
+SELECT_ENROLLMENTS = 'select * from Enrollment where userId = ?'
+DELETE_ENROLLMENT = 'DELETE from Enrollment where id = ?'
+
 
 class Dao:
     def __init__(self, file: str = f'{DATA_ROOT}/database.db'):
@@ -47,6 +59,48 @@ class Dao:
         self.conn = self.__connect()
         self.conn.row_factory = sqlite3.Row
         self.conn.execute(ENABLE_FOREIGN_KEYS)
+
+    def create_enrollment(self, enrollment: Enrollment) -> Enrollment:
+        try:
+            row_id = self.__write_data(
+                INSERT_ENROLLMENT,
+                (enrollment.userId, enrollment.planId, enrollment.endDate),
+            )
+        except sqlite3.IntegrityError as err:
+            if "UNIQUE constraint failed" in str(err):
+                raise DuplicateDataError("User already enrolled to plan.")
+        return Enrollment(**dict(self.__get_row(SELECT_ENROLLMENT_ROWID, (row_id,))))
+
+    def get_enrollment(self, enrollment: Enrollment) -> Union[Enrollment, None]:
+        result = self.__get_row(SELECT_ENROLLMENT, (enrollment.id,))
+        if result:
+            return Enrollment(**dict(result))
+        else:
+            return None
+
+    def update_enrollment(self, enrollment: Enrollment) -> Union[Enrollment, None]:
+        self.__write_data(
+            UPDATE_ENROLLMENT,
+            (
+                str(enrollment.status.value),
+                enrollment.endDate,
+                enrollment.progress,
+                enrollment.id,
+            ),
+        )
+        return self.get_enrollment(enrollment)
+
+    def delete_enrollment(self, enrollment: Enrollment) -> bool:
+        self.__write_data(DELETE_ENROLLMENT, (enrollment.id,))
+        return True
+
+    def get_user_enrollments(self, user_id: int) -> List[Enrollment]:
+        results = self.__get_rows(SELECT_ENROLLMENTS, (user_id,))
+        enrollments = []
+        if results:
+            for row in results:
+                enrollments.append(Enrollment(**dict(row)))
+        return enrollments
 
     def create_user(self, user: User) -> User:
         try:
