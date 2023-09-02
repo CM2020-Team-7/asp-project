@@ -1,23 +1,25 @@
 import { Box, Stack, Typography, TextField, Button, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import AuthOutlet from './AuthOutlet';
-import { useAuth } from '@/providers/AuthProvider';
-useAuth;
+import { userApiSlice } from '@/features/user/userApiSlice';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '@/features/user/userSlice';
+
 function Register() {
     const ad = useRef(null);
     const soyad = useRef(null);
-    const email = useRef(null);
+    const username = useRef(null);
     const password = useRef(null);
     const passwordConf = useRef(null);
     const navigate = useNavigate();
-    const { handleLogin } = useAuth();
+    const dispatch = useDispatch();
 
     const registerHandler = async (e) => {
         e.preventDefault();
         const FirstName = ad.current.value.replace(/\s+/g, '');
         const LastName = soyad.current.value.replace(/\s+/g, '');
-        const Email = email.current.value.replace(/\s+/g, '');
+        const Username = username.current.value.replace(/\s+/g, '');
         const Password = password.current.value.replace(/\s+/g, '');
         const pwdConf = passwordConf.current.value.replace(/\s+/g, '');
         if (FirstName === '') {
@@ -26,12 +28,12 @@ function Register() {
         } else if (LastName === '') {
             // 'Please enter surname.'
             soyad.current.focus();
-        } else if (Email === '') {
-            // 'Please enter email.'
-            email.current.focus();
-        } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{1,20}$/.test(Email)) {
-            // 'Please enter real email.'
-            email.current.focus();
+        } else if (Username === '') {
+            // 'Please enter username.'
+            username.current.focus();
+            // } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{1,20}$/.test(Username)) {
+            //     // 'Please enter real username.'
+            //     username.current.focus();
         } else if (Password === '') {
             // 'Please enter password.'
             password.current.focus();
@@ -52,8 +54,25 @@ function Register() {
             // 'Password must contain at least one uppercase letter, one lowercase letter and one number.',
             password.current.focus();
         } else {
-            handleLogin();
-            navigate('/dashboard');
+            try {
+                const res = await dispatch(
+                    userApiSlice.endpoints.register.initiate({
+                        firstName: FirstName,
+                        lastName: LastName,
+                        username: Username,
+                        passwd: Password,
+                    }),
+                );
+                dispatch(
+                    setCredentials({
+                        AccessToken: res.token,
+                        User: res.user,
+                    }),
+                );
+                navigate('/dashboard');
+            } catch (error) {
+                console.error(error);
+            }
         }
     };
 
@@ -81,9 +100,9 @@ function Register() {
                 />
             </Stack>
             <TextField
-                inputRef={email}
-                type="email"
-                label="E-mail"
+                inputRef={username}
+                type="username"
+                label="Username"
                 variant="outlined"
                 autoComplete="off"
             />

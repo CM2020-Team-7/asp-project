@@ -3,20 +3,21 @@ import {
     AppBar,
     Button,
     Container,
-    Link,
     Toolbar,
     Typography,
     ButtonGroup,
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
+import { useDispatch } from 'react-redux';
+import { userApiSlice } from '@/features/user/userApiSlice';
+import { useSelector } from 'react-redux';
 
 const Navbar = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, handleLogout } = useAuth();
-
+    const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
+    const dispatch = useDispatch();
     const handleLogoutClick = () => {
-        handleLogout();
+        dispatch(userApiSlice.endpoints.logout.initiate());
         navigate('/');
     };
 
