@@ -178,6 +178,7 @@ class Dao:
             cur = self.__get_cursor().execute(DELETE_PLAN, (plan.id,))
             cur.connection.commit()
         except:
+            cur.connection.rollback()
             return False
         return True
 
