@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 
 from ..auth.jwt_token_tools import verify_and_read_token
 from ..dao.dao import Dao
@@ -14,35 +14,35 @@ dao = Dao()
 
 
 @router.post("/content/plans", tags=["Content Service"])
-async def create_plan(plan: Plan, token: str) -> Plan:
+async def create_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
     """
     Create a plan for the userId provided in the token.
 
-    - **token**: valid token from auth request.
+    - **authorization**: valid token from auth request.
     - **title**: Title of the plan to create.
     - **modules** (Optional): Optionally provide a list of module IDs to associate with the plan.
 
     All other fields are ignored when provided, and returned based on what is created.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     plan.ownerId = user_id
     result = dao.create_plan(plan)
     return result
 
 
 @router.put("/content/plans", tags=["Content Service"])
-async def update_plan(plan: Plan, token: str) -> Plan:
+async def update_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
     """
     Update an existing plan to change title or modules.
 
-    - **token**: valid token from auth request.
+    - **authorization**: valid token from auth request.
     - **planId**: id of the plan to update.
     - **title**: Title of the plan to update.
     - **modules** (Optional): Optionally provide a list of module IDs to associate with the plan.
 
     All other fields are ignored when provided, and returned based on what is updated.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
 
     if not plan.id:
         raise HTTPException(
@@ -76,58 +76,58 @@ async def update_plan(plan: Plan, token: str) -> Plan:
 
 
 @router.get("/content/plans", tags=["Content Service"])
-async def get_user_plans(token: str) -> List[Plan]:
+async def get_user_plans(authorization: str = Header(None)) -> List[Plan]:
     """
     Get a list of plans for the userId provided in the token.
 
-    - **token**: valid token from auth request.
+    - **authorization**: valid token from auth request.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     result = dao.get_user_plans(user_id)
     return result
 
 
 @router.get("/content/modules", tags=["Content Service"])
-async def get_user_modules(token: str) -> List[Module]:
+async def get_user_modules(authorization: str = Header(None)) -> List[Module]:
     """
     Get all modules for a given userId provided in the token.
 
     - **token**: valid token from auth request
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     result = dao.get_user_modules(user_id)
     return result
 
 
 @router.post("/content/modules", tags=["Content Service"])
-async def create_module(module: Module, token: str) -> Plan:
+async def create_module(module: Module, authorization: str = Header(None)) -> Plan:
     """
     Create a module for the userId provided in the token.
 
-    - **token**: valid token from auth request.
+    - **authorization**: valid token from auth request.
     - **title**: Title of the module to create.
 
     All other fields are ignored when provided, and returned based on what is created.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     module.ownerId = user_id
     result = dao.create_module(module)
     return result
 
 
 @router.post("/content/lessons", tags=["Content Service"])
-async def create_lesson(lesson: Lesson, token: str) -> Lesson:
+async def create_lesson(lesson: Lesson, authorization: str = Header(None)) -> Lesson:
     """
     Create a lesson for the userId provided in the token.
 
-    - **token**: valid token from auth request.
+    - **authorization**: valid token from auth request.
     - **title**: Title of the lesson to create.
     - **moduleId**: ID of the module to associate the lesson with.
     - **content**: Content of the lesson (stored as text).
 
     All other fields are ignored when provided, and returned based on what is created.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     lesson.ownerId = user_id
     result = dao.create_lesson(lesson)
     return result
