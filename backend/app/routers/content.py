@@ -117,14 +117,12 @@ async def create_module(module: Module, authorization: str = Header(None)) -> Pl
 
 
 @router.delete("/content/modules/{module_id}", tags=["Content Service"])
-async def create_module(module_id: int, authorization: str = Header(None)) -> Response:
+async def delete_module(module_id: int, authorization: str = Header(None)) -> Response:
     """
-    Create a module for the userId provided in the token.
+    Delete a module for the userId provided in the token.
 
     - **authorization**: valid token from auth request.
-    - **title**: Title of the module to create.
-
-    All other fields are ignored when provided, and returned based on what is created.
+    - **module_id**: id of the module to delete. Must exist for that user.
     """
     user_id = verify_and_read_token(authorization)
     user_modules = dao.get_user_modules(user_id)
