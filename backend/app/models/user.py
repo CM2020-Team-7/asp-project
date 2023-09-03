@@ -22,7 +22,6 @@ class User(BaseModel):
             self.passwd, str
         ), "User password must be str, has the password been set?"
         assert isinstance(value, str), "Provided password must be str."
-        # import pdb; pdb.set_trace()
         return self.passwd == self.get_password_hash(value)
 
     def get_hashed_password(self) -> str:
