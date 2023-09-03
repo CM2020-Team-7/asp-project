@@ -36,10 +36,12 @@ DISASSOCIATE_MODULE = (
 )
 DELETE_ASSOCIATION_BY_MODULE_ID = 'DELETE FROM ModulePlanAssociation where moduleId = ?'
 SELECT_LESSON_ROWID = 'select * from lesson where rowid = ?'
+SELECT_LESSON_ID = 'select * from lesson where id = ?'
 INSERT_LESSON = (
     'INSERT INTO Lesson ("ownerId", "moduleId", "title", "content") VALUES (?, ?, ?, ?)'
 )
 SELECT_MODULE_LESSONS = 'select * from lesson where moduleId = ?'
+DELETE_LESSON = 'delete from Lesson where id = ?'
 
 SELECT_ENROLLMENT_ROWID = 'select * from Enrollment where rowid = ?'
 INSERT_ENROLLMENT = (
@@ -234,6 +236,16 @@ class Dao:
         )
         result = self.__get_row(SELECT_LESSON_ROWID, (row_id,))
         return Lesson(**dict(result))
+
+    def delete_lesson(self, lesson_id: int) -> bool:
+        self.__write_data(DELETE_LESSON, (lesson_id,))
+        return True
+
+    def get_lesson_by_id(self, lesson_id: int) -> Union[Lesson, None]:
+        result = self.__get_row(SELECT_LESSON_ID, (lesson_id,))
+        if result:
+            return Lesson(**dict(result))
+        return None
 
     def get_module_lessons(self, module_id: int) -> Union[List[Lesson], None]:
         stored_lessons = None
