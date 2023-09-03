@@ -171,12 +171,12 @@ class Dao:
         self.update_plan_modules(plan.id, plan.modules)
         return self.get_plan(plan.id)
 
-    def delete_plan(self, plan: Plan) -> bool:
+    def delete_plan(self, plan_id: int) -> bool:
         cur = self.__get_cursor()
         try:
-            cur.execute(DELETE_ASSOCIATION_BY_PLANID, (plan.id,))
-            cur.execute(DELETE_ENROLLMENT_PLAN, (plan.id,))
-            cur.execute(DELETE_PLAN, (plan.id,))
+            cur.execute(DELETE_ASSOCIATION_BY_PLANID, (plan_id,))
+            cur.execute(DELETE_ENROLLMENT_PLAN, (plan_id,))
+            cur.execute(DELETE_PLAN, (plan_id,))
             cur.connection.commit()
         except:
             cur.connection.rollback()
