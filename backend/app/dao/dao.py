@@ -26,6 +26,7 @@ UPDATE_PLAN = 'UPDATE Plan SET title = ? where id = ?'
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
 SELECT_MODULES = 'select * from module where ownerId = ?'
+DELETE_MODULE = 'delete from Module where id = ?'
 INSERT_MODULE = 'INSERT INTO Module ("ownerId", "title") VALUES (?, ?)'
 ASSOCIATE_MODULE = (
     'INSERT INTO ModulePlanAssociation ("planId", "moduleId") VALUES (?, ?)'
@@ -33,7 +34,7 @@ ASSOCIATE_MODULE = (
 DISASSOCIATE_MODULE = (
     'DELETE FROM ModulePlanAssociation where planId = ? and moduleId = ?'
 )
-
+DELETE_ASSOCIATION_BY_MODULE_ID = 'DELETE FROM ModulePlanAssociation where moduleId = ?'
 SELECT_LESSON_ROWID = 'select * from lesson where rowid = ?'
 INSERT_LESSON = (
     'INSERT INTO Lesson ("ownerId", "moduleId", "title", "content") VALUES (?, ?, ?, ?)'
@@ -50,6 +51,7 @@ UPDATE_ENROLLMENT = (
 SELECT_ENROLLMENT = 'select * from Enrollment where id = ?'
 SELECT_ENROLLMENTS = 'select * from Enrollment where userId = ?'
 DELETE_ENROLLMENT = 'DELETE from Enrollment where id = ?'
+DELETE_ENROLLMENT_MODULE = 'DELETE from Enrollment where moduleId = ?'
 
 
 class Dao:
@@ -200,6 +202,18 @@ class Dao:
         row_id = self.__write_data(INSERT_MODULE, (module.ownerId, module.title))
         result = self.__get_row(SELECT_MODULE_ROWID, (row_id,))
         return Module(**dict(result))
+
+    def delete_module(self, module_id: int) -> bool:
+        cur = self.__get_cursor()
+        try:
+            cur.execute(DELETE_ASSOCIATION_BY_MODULE_ID, (module_id,))
+            cur.execute(DELETE_ENROLLMENT_MODULE, (module_id,))
+            cur.execute(DELETE_MODULE, (module_id,))
+            cur.connection.commit()
+        except:
+            cur.connection.rollback()
+            return False
+        return True
 
     def get_user_modules(self, user_id: str) -> List[Module]:
         results = self.__get_rows(SELECT_MODULES, (user_id,))

@@ -8,6 +8,7 @@ from ..dao.exceptions import InvalidPlanIdModuleIdAssociationError
 from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
+from ..models.response import Response
 
 router = APIRouter()
 dao = Dao()
@@ -113,6 +114,40 @@ async def create_module(module: Module, authorization: str = Header(None)) -> Pl
     module.ownerId = user_id
     result = dao.create_module(module)
     return result
+
+
+@router.delete("/content/modules/{module_id}", tags=["Content Service"])
+async def create_module(module_id: int, authorization: str = Header(None)) -> Response:
+    """
+    Create a module for the userId provided in the token.
+
+    - **authorization**: valid token from auth request.
+    - **title**: Title of the module to create.
+
+    All other fields are ignored when provided, and returned based on what is created.
+    """
+    user_id = verify_and_read_token(authorization)
+    user_modules = dao.get_user_modules(user_id)
+    module_found = False
+    for module in user_modules:
+        if module.id == module_id:
+            module_found = True
+            if dao.delete_module(module_id):
+                return Response(
+                    status="SUCCESS",
+                    message="Successfully deleted moduleId" + str(module_id),
+                )
+            break  # Found, no need to continue looping if dao call unsuccessful.
+    if not module_found:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="module with provided ID does not exist for this user.",
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="unable to delete module.",
+        )
 
 
 @router.post("/content/lessons", tags=["Content Service"])
