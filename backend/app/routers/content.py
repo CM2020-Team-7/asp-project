@@ -37,10 +37,7 @@ async def delete_plan(plan_id: int, authorization: str = Header(None)) -> Respon
     Delete a plan for the userId provided in the token.
 
     - **authorization**: valid token from auth request.
-    - **id**: planId to use to lookup plan.
-
-    All other fields are ignored when provided, and plan is looked up from the DB
-    and ownership is verified with token.
+    - **plan_id**: planId to use to lookup plan.
     """
     user_id = verify_and_read_token(authorization)
     validate_provided_plan(user_id, plan_id=plan_id)
