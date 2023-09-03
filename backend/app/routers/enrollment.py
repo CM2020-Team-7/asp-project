@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 
 from ..auth.jwt_token_tools import verify_and_read_token
 from ..dao.dao import Dao
@@ -12,7 +12,9 @@ dao = Dao()
 
 
 @router.post("/enrollment", tags=["Enrollment Service"])
-async def create_enrollment(enrollment: Enrollment, token: str) -> Enrollment:
+async def create_enrollment(
+    enrollment: Enrollment, authorization: str = Header(None)
+) -> Enrollment:
     """
     Enroll a user to a specific plan, containing module and lesson content.
 
@@ -22,26 +24,28 @@ async def create_enrollment(enrollment: Enrollment, token: str) -> Enrollment:
 
     All other fields are ignored when provided, and returned based on what is created.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     enrollment.userId = user_id
     result = dao.create_enrollment(enrollment)
     return result
 
 
 @router.get("/enrollment", tags=["Enrollment Service"])
-async def get_user_enrollments(token: str) -> List[Enrollment]:
+async def get_user_enrollments(authorization: str = Header(None)) -> List[Enrollment]:
     """
     Get all enrollments for the userId in the token.
 
     - **token**: valid token from auth request.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     result = dao.get_user_enrollments(user_id)
     return result
 
 
 @router.put("/enrollment", tags=["Enrollment Service"])
-async def update_enrollment(enrollment: Enrollment, token: str) -> Enrollment:
+async def update_enrollment(
+    enrollment: Enrollment, authorization: str = Header(None)
+) -> Enrollment:
     """
     Update an existing enrollment for the userId in the token.
 
@@ -53,7 +57,7 @@ async def update_enrollment(enrollment: Enrollment, token: str) -> Enrollment:
 
     All other fields are ignored when provided, and returned based on what exists after update.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     enrollment.userId = user_id
     verify_input_enrollment(user_id, enrollment)
     result = dao.update_enrollment(enrollment)
@@ -61,7 +65,9 @@ async def update_enrollment(enrollment: Enrollment, token: str) -> Enrollment:
 
 
 @router.delete("/enrollment", tags=["Enrollment Service"])
-async def delete_enrollment(enrollment: Enrollment, token: str) -> Response:
+async def delete_enrollment(
+    enrollment: Enrollment, authorization: str = Header(None)
+) -> Response:
     """
     Delete an existing enrollment for the userId in the token.
 
@@ -70,7 +76,7 @@ async def delete_enrollment(enrollment: Enrollment, token: str) -> Response:
 
     All other fields are ignored when provided and only status, and message are returned.
     """
-    user_id = verify_and_read_token(token)
+    user_id = verify_and_read_token(authorization)
     enrollment.userId = user_id
     verify_input_enrollment(user_id, enrollment)
     if dao.delete_enrollment(enrollment):
