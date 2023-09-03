@@ -22,6 +22,7 @@ class User(BaseModel):
             self.passwd, str
         ), "User password must be str, has the password been set?"
         assert isinstance(value, str), "Provided password must be str."
+        # import pdb; pdb.set_trace()
         return self.passwd == self.get_password_hash(value)
 
     def get_hashed_password(self) -> str:
@@ -31,10 +32,11 @@ class User(BaseModel):
         return self.get_password_hash(self.passwd)
 
     def get_password_hash(self, password: str) -> str:
+        assert password is not None, 'password must not be None.'
         passwd = hashlib.pbkdf2_hmac(
             'sha256',
             password.encode(),
-            str(self.id).encode().zfill(32),
+            '5up3rS3c|23T'.encode().zfill(32),
             100000,
             dklen=128,
         )
