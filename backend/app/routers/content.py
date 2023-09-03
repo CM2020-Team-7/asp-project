@@ -8,6 +8,7 @@ from ..dao.exceptions import InvalidPlanIdModuleIdAssociationError
 from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
+from ..models.response import Response
 
 router = APIRouter()
 dao = Dao()
@@ -31,7 +32,7 @@ async def create_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
 
 
 @router.delete("/content/plans", tags=["Content Service"])
-async def delete_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
+async def delete_plan(plan: Plan, authorization: str = Header(None)) -> Response:
     """
     Delete a plan for the userId provided in the token.
 
@@ -45,7 +46,9 @@ async def delete_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
     validate_provided_plan(user_id, plan)
 
     if dao.delete_plan(plan):
-        return plan
+        return Response(
+            status="SUCCESS", message="Successfully deleted planId: " + str(plan.id)
+        )
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
