@@ -2,6 +2,7 @@ import os
 import sqlite3
 from typing import Any, List, Optional, Tuple, Union
 
+from ..models.enrollment import Enrollment
 from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
@@ -21,10 +22,12 @@ SELECT_PLAN = 'select * from plan where id = ?'
 INSERT_PLAN = 'INSERT INTO Plan ("ownerId", "title") VALUES (?, ?)'
 SELECT_PLAN_MODULE_IDS = 'select moduleId from ModulePlanAssociation where planId = ?'
 UPDATE_PLAN = 'UPDATE Plan SET title = ? where id = ?'
+DELETE_PLAN = 'DELETE from Plan where id = ?'
 
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
 SELECT_MODULES = 'select * from module where ownerId = ?'
+DELETE_MODULE = 'delete from Module where id = ?'
 INSERT_MODULE = 'INSERT INTO Module ("ownerId", "title") VALUES (?, ?)'
 ASSOCIATE_MODULE = (
     'INSERT INTO ModulePlanAssociation ("planId", "moduleId") VALUES (?, ?)'
@@ -32,12 +35,29 @@ ASSOCIATE_MODULE = (
 DISASSOCIATE_MODULE = (
     'DELETE FROM ModulePlanAssociation where planId = ? and moduleId = ?'
 )
+DELETE_ASSOCIATION_BY_MODULE_ID = 'DELETE FROM ModulePlanAssociation where moduleId = ?'
+DELETE_ASSOCIATION_BY_PLANID = 'DELETE FROM ModulePlanAssociation where planId = ?'
 
 SELECT_LESSON_ROWID = 'select * from lesson where rowid = ?'
+SELECT_LESSON_ID = 'select * from lesson where id = ?'
 INSERT_LESSON = (
     'INSERT INTO Lesson ("ownerId", "moduleId", "title", "content") VALUES (?, ?, ?, ?)'
 )
 SELECT_MODULE_LESSONS = 'select * from lesson where moduleId = ?'
+DELETE_LESSON = 'delete from Lesson where id = ?'
+
+SELECT_ENROLLMENT_ROWID = 'select * from Enrollment where rowid = ?'
+INSERT_ENROLLMENT = (
+    'INSERT INTO Enrollment ("userId", "planId", "endDate") VALUES (?, ?, ?)'
+)
+UPDATE_ENROLLMENT = (
+    'Update Enrollment SET status = ?, endDate = ?, progress = ? where id = ?'
+)
+SELECT_ENROLLMENT = 'select * from Enrollment where id = ?'
+SELECT_ENROLLMENTS = 'select * from Enrollment where userId = ?'
+DELETE_ENROLLMENT = 'DELETE from Enrollment where id = ?'
+DELETE_ENROLLMENT_MODULE = 'DELETE from Enrollment where moduleId = ?'
+DELETE_ENROLLMENT_PLAN = 'DELETE from Enrollment where planId = ?'
 
 
 class Dao:
@@ -47,6 +67,48 @@ class Dao:
         self.conn = self.__connect()
         self.conn.row_factory = sqlite3.Row
         self.conn.execute(ENABLE_FOREIGN_KEYS)
+
+    def create_enrollment(self, enrollment: Enrollment) -> Enrollment:
+        try:
+            row_id = self.__write_data(
+                INSERT_ENROLLMENT,
+                (enrollment.userId, enrollment.planId, enrollment.endDate),
+            )
+        except sqlite3.IntegrityError as err:
+            if "UNIQUE constraint failed" in str(err):
+                raise DuplicateDataError("User already enrolled to plan.")
+        return Enrollment(**dict(self.__get_row(SELECT_ENROLLMENT_ROWID, (row_id,))))
+
+    def get_enrollment(self, enrollment: Enrollment) -> Union[Enrollment, None]:
+        result = self.__get_row(SELECT_ENROLLMENT, (enrollment.id,))
+        if result:
+            return Enrollment(**dict(result))
+        else:
+            return None
+
+    def update_enrollment(self, enrollment: Enrollment) -> Union[Enrollment, None]:
+        self.__write_data(
+            UPDATE_ENROLLMENT,
+            (
+                str(enrollment.status.value),
+                enrollment.endDate,
+                enrollment.progress,
+                enrollment.id,
+            ),
+        )
+        return self.get_enrollment(enrollment)
+
+    def delete_enrollment(self, enrollment: Enrollment) -> bool:
+        self.__write_data(DELETE_ENROLLMENT, (enrollment.id,))
+        return True
+
+    def get_user_enrollments(self, user_id: int) -> List[Enrollment]:
+        results = self.__get_rows(SELECT_ENROLLMENTS, (user_id,))
+        enrollments = []
+        if results:
+            for row in results:
+                enrollments.append(Enrollment(**dict(row)))
+        return enrollments
 
     def create_user(self, user: User) -> User:
         try:
@@ -114,6 +176,18 @@ class Dao:
         self.update_plan_modules(plan.id, plan.modules)
         return self.get_plan(plan.id)
 
+    def delete_plan(self, plan_id: int) -> bool:
+        cur = self.__get_cursor()
+        try:
+            cur.execute(DELETE_ASSOCIATION_BY_PLANID, (plan_id,))
+            cur.execute(DELETE_ENROLLMENT_PLAN, (plan_id,))
+            cur.execute(DELETE_PLAN, (plan_id,))
+            cur.connection.commit()
+        except:
+            cur.connection.rollback()
+            return False
+        return True
+
     def update_plan_modules(
         self, plan_id: int, new_module_list: Union[List[int], None]
     ) -> Union[List[int], None]:
@@ -147,6 +221,18 @@ class Dao:
         result = self.__get_row(SELECT_MODULE_ROWID, (row_id,))
         return Module(**dict(result))
 
+    def delete_module(self, module_id: int) -> bool:
+        cur = self.__get_cursor()
+        try:
+            cur.execute(DELETE_ASSOCIATION_BY_MODULE_ID, (module_id,))
+            cur.execute(DELETE_ENROLLMENT_MODULE, (module_id,))
+            cur.execute(DELETE_MODULE, (module_id,))
+            cur.connection.commit()
+        except:
+            cur.connection.rollback()
+            return False
+        return True
+
     def get_user_modules(self, user_id: str) -> List[Module]:
         results = self.__get_rows(SELECT_MODULES, (user_id,))
         modules = []
@@ -166,6 +252,16 @@ class Dao:
         )
         result = self.__get_row(SELECT_LESSON_ROWID, (row_id,))
         return Lesson(**dict(result))
+
+    def delete_lesson(self, lesson_id: int) -> bool:
+        self.__write_data(DELETE_LESSON, (lesson_id,))
+        return True
+
+    def get_lesson_by_id(self, lesson_id: int) -> Union[Lesson, None]:
+        result = self.__get_row(SELECT_LESSON_ID, (lesson_id,))
+        if result:
+            return Lesson(**dict(result))
+        return None
 
     def get_module_lessons(self, module_id: int) -> Union[List[Lesson], None]:
         stored_lessons = None
