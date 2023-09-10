@@ -75,7 +75,7 @@ BEGIN
 END;
 
 --insert test user
-INSERT INTO User ("firstName", "lastName", "username", "passwd") VALUES ("Test", "User", "user1", "mZQMOkC7G8ACDdmT90HapDAjYwDT96o2AbtGQIqXPufa0NmnF1q+rzaQiue4E0KgbOjMZQjZmz3SP12wbrg0QSLYngfRj1BducGas3kWDG4DF9qKvN2O9lu2/hW9E7PeEr7Qs/Du600Z5pb53k8/7b01OzS46h14oL15mjqCn2A=");
+-- INSERT INTO User ("firstName", "lastName", "username", "passwd") VALUES ("Test", "User", "user1", "mZQMOkC7G8ACDdmT90HapDAjYwDT96o2AbtGQIqXPufa0NmnF1q+rzaQiue4E0KgbOjMZQjZmz3SP12wbrg0QSLYngfRj1BducGas3kWDG4DF9qKvN2O9lu2/hW9E7PeEr7Qs/Du600Z5pb53k8/7b01OzS46h14oL15mjqCn2A=");
 
 COMMIT;
 
