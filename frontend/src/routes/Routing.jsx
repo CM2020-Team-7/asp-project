@@ -20,6 +20,7 @@ import ModuleFull from '@/pages/ModuleFull/ModuleFull';
 function Routing() {
     const token = useSelector((state) => state.user.token);
     const isAuthenticated = !!token;
+
     return (
         <Routes>
             <Route

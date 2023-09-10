@@ -10,6 +10,7 @@ const getCookie = (name) => {
 
 const initialState = {
     token: getCookie('jwt_token'),
+
     user: {
         Id: import.meta.env.VITE_WEB_USER_ID,
         FirstName: '',
@@ -34,6 +35,7 @@ export const userSlice = createSlice({
             // state.user = { Id: import.meta.env.VITE_WEB_USER_ID };
             // state.token = null;
             // localStorage.removeItem('user');
+
         },
         setToken: (state, action) => {
             state.token = action.payload;

@@ -24,6 +24,7 @@ const Navbar = () => {
         await dispatch(userApiSlice.endpoints.logout.initiate());
         removeCookie('jwt_token', { path: '/' });
         window.location.reload();
+
     };
     const mode = useSelector(selectMode);
 

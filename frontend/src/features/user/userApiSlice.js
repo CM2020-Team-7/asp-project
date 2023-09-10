@@ -31,6 +31,7 @@ export const userApiSlice = apiSlice.injectEndpoints({
                 credentials: 'include',
             }),
         }),
+
     }),
 });
 

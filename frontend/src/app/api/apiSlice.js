@@ -11,6 +11,7 @@ const baseQuery = fetchBaseQuery({
     baseUrl: 'http://localhost:8000',
     prepareHeaders: (headers, { getState }) => {
         const token = getCookie('jwt_token');
+
         if (token) {
             headers.set('Authorization', `Bearer ${token}`);
         }
@@ -31,6 +32,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     //         api.dispatch(logOut());
     //     }
     // }
+
     return result;
 };
 

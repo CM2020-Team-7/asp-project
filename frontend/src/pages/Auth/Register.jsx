@@ -10,6 +10,7 @@ import { useCookies } from 'react-cookie';
 function Register() {
     const name = useRef(null);
     const surname = useRef(null);
+
     const username = useRef(null);
     const password = useRef(null);
     const passwordConf = useRef(null);
@@ -21,6 +22,7 @@ function Register() {
         e.preventDefault();
         const FirstName = name.current.value.replace(/\s+/g, '');
         const LastName = surname.current.value.replace(/\s+/g, '');
+
         const Username = username.current.value.replace(/\s+/g, '');
         const Password = password.current.value.replace(/\s+/g, '');
         const pwdConf = passwordConf.current.value.replace(/\s+/g, '');
@@ -30,6 +32,7 @@ function Register() {
         } else if (LastName === '') {
             // 'Please enter surname.'
             surname.current.focus();
+
         } else if (Username === '') {
             // 'Please enter username.'
             username.current.focus();
@@ -72,6 +75,7 @@ function Register() {
                     }),
                 );
                 setCookie('jwt_token', res.data.token, 30);
+
                 navigate('/dashboard');
             } catch (error) {
                 console.error(error);

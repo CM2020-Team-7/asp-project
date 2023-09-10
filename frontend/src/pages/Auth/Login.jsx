@@ -20,6 +20,7 @@ import { useCookies } from 'react-cookie';
 function Login() {
     const [cookies, setCookie] = useCookies(['jwt_token']);
 
+
     const username = useRef(null);
     const password = useRef(null);
     const navigate = useNavigate();
@@ -41,6 +42,7 @@ function Login() {
         } else {
             try {
                 const res = await dispatch(
+
                     userApiSlice.endpoints.login.initiate({
                         username: user,
                         password: pwd,
@@ -55,6 +57,7 @@ function Login() {
                 // );
                 setCookie('jwt_token', res.data.token, 30);
                 window.location.reload();
+
             } catch (error) {
                 console.error(error);
             }
