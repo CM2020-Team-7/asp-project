@@ -6,6 +6,7 @@ from ..dao.exceptions import DuplicateDataError
 from ..models.login_request import LoginRequest
 from ..models.login_response import LoginResponse
 from ..models.user import User
+from typing import Union
 
 router = APIRouter()
 dao = Dao()
@@ -59,7 +60,6 @@ async def register(user: User) -> Union[User, dict]:
     response_data = {"user": result, "token": token}
 
     return response_data
-
 
 @router.get("/auth/logout", tags=["Authentication Service"])
 async def logout(authorization: str = Header(None)) -> LoginResponse:

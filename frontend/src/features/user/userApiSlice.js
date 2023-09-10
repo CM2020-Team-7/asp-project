@@ -17,21 +17,21 @@ export const userApiSlice = apiSlice.injectEndpoints({
                 body,
             }),
         }),
-        // logout: builder.mutation({
-        //     query: () => ({
-        //         url: '/auth/logout',
-        //         method: 'POST',
-        //     }),
-        // }),
+        logout: builder.mutation({
+            query: () => ({
+                url: '/auth/logout',
+                method: 'GET',
+            }),
+        }),
+        refresh: builder.mutation({
+            query: () => ({
+                url: '/refresh',
+                method: 'POST',
+                withCredentials: true,
+                credentials: 'include',
+            }),
+        }),
 
-        // refresh: builder.mutation({
-        //     query: () => ({
-        //         url: '/refresh',
-        //         method: 'POST',
-        //         withCredentials: true,
-        //         credentials: 'include',
-        //     }),
-        // }),
     }),
 });
 

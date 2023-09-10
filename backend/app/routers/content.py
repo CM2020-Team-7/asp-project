@@ -9,6 +9,7 @@ from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
 from ..models.response import Response
+from fastapi import Header
 
 router = APIRouter()
 dao = Dao()
@@ -16,16 +17,16 @@ dao = Dao()
 
 @router.post("/content/plans", tags=["Content Service"])
 async def create_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
-    """
-    Create a plan for the userId provided in the token.
+    if authorization is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header is missing.",
+        )
 
-    - **authorization**: valid token from auth request.
-    - **title**: Title of the plan to create.
-    - **modules** (Optional): Optionally provide a list of module IDs to associate with the plan.
+    # Extract the token from the Authorization header
+    token = authorization.split()[-1]
 
-    All other fields are ignored when provided, and returned based on what is created.
-    """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(token)
     plan.ownerId = user_id
     result = dao.create_plan(plan)
     return result
@@ -39,7 +40,7 @@ async def delete_plan(plan_id: int, authorization: str = Header(None)) -> Respon
     - **authorization**: valid token from auth request.
     - **plan_id**: planId to use to lookup plan.
     """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(authorization.split()[-1])
     validate_provided_plan(user_id, plan_id=plan_id)
 
     if dao.delete_plan(plan_id):
@@ -65,7 +66,7 @@ async def update_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
 
     All other fields are ignored when provided, and returned based on what is updated.
     """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(authorization.split()[-1])
     validate_provided_plan(user_id, plan=plan)
 
     try:
@@ -86,9 +87,35 @@ async def get_user_plans(authorization: str = Header(None)) -> List[Plan]:
 
     - **authorization**: valid token from auth request.
     """
-    user_id = verify_and_read_token(authorization)
+    
+    user_id = verify_and_read_token(authorization.split()[-1])
     result = dao.get_user_plans(user_id)
     return result
+
+@router.get("/content/plans/{plan_id}", tags=["Content Service"])
+async def get_user_plan_by_id(
+    plan_id: int,
+    authorization: str = Header(None)
+) -> Plan:
+    """
+    Get a plan by ID for the user associated with the provided token.
+
+    - **plan_id**: ID of the plan to retrieve.
+    - **authorization**: Valid token from the auth request.
+    """
+    try:
+        # Verify the token and get the user ID
+        user_id = verify_and_read_token(authorization.split()[-1])
+        
+        # Fetch the plan by ID for the user
+        plan = dao.get_user_plan_by_id(user_id, plan_id)
+        
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+        
+        return plan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/content/modules", tags=["Content Service"])
@@ -98,10 +125,34 @@ async def get_user_modules(authorization: str = Header(None)) -> List[Module]:
 
     - **token**: valid token from auth request
     """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(authorization.split()[-1])
     result = dao.get_user_modules(user_id)
     return result
 
+@router.get("/content/modules/{module_id}", tags=["Content Service"])
+async def get_user_module_by_id(
+    module_id: int,
+    authorization: str = Header(None)
+) -> Plan:
+    """
+    Get a plan by ID for the user associated with the provided token.
+
+    - **plan_id**: ID of the plan to retrieve.
+    - **authorization**: Valid token from the auth request.
+    """
+    try:
+        # Verify the token and get the user ID
+        user_id = verify_and_read_token(authorization.split()[-1])
+        
+        # Fetch the plan by ID for the user
+        plan = dao.get_user_module_by_id(user_id, module_id)
+        
+        if not plan:
+            raise HTTPException(status_code=404, detail="Module not found")
+        
+        return plan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/content/modules", tags=["Content Service"])
 async def create_module(module: Module, authorization: str = Header(None)) -> Plan:
@@ -113,7 +164,7 @@ async def create_module(module: Module, authorization: str = Header(None)) -> Pl
 
     All other fields are ignored when provided, and returned based on what is created.
     """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(authorization.split()[-1])
     module.ownerId = user_id
     result = dao.create_module(module)
     return result
@@ -127,7 +178,7 @@ async def delete_module(module_id: int, authorization: str = Header(None)) -> Re
     - **authorization**: valid token from auth request.
     - **module_id**: id of the module to delete. Must exist for that user.
     """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(authorization.split()[-1])
     user_modules = dao.get_user_modules(user_id)
     module_found = False
     for module in user_modules:
@@ -163,7 +214,7 @@ async def create_lesson(lesson: Lesson, authorization: str = Header(None)) -> Le
 
     All other fields are ignored when provided, and returned based on what is created.
     """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(authorization.split()[-1])
     lesson.ownerId = user_id
     result = dao.create_lesson(lesson)
     return result
@@ -177,7 +228,7 @@ async def delete_lesson(lesson_id: int, authorization: str = Header(None)) -> Le
     - **authorization**: valid token from auth request.
     - **lesson_id**: id of the lesson to delete, must exist for the user.
     """
-    user_id = verify_and_read_token(authorization)
+    user_id = verify_and_read_token(authorization.split()[-1])
     lesson = dao.get_lesson_by_id(lesson_id)
 
     if not lesson:

@@ -5,29 +5,34 @@ import AuthOutlet from './AuthOutlet';
 import { userApiSlice } from '@/features/user/userApiSlice';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '@/features/user/userSlice';
+import { useCookies } from 'react-cookie';
 
 function Register() {
-    const ad = useRef(null);
-    const soyad = useRef(null);
+    const name = useRef(null);
+    const surname = useRef(null);
+
     const username = useRef(null);
     const password = useRef(null);
     const passwordConf = useRef(null);
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const [cookies, setCookie] = useCookies(['jwt_token']);
 
     const registerHandler = async (e) => {
         e.preventDefault();
-        const FirstName = ad.current.value.replace(/\s+/g, '');
-        const LastName = soyad.current.value.replace(/\s+/g, '');
+        const FirstName = name.current.value.replace(/\s+/g, '');
+        const LastName = surname.current.value.replace(/\s+/g, '');
+
         const Username = username.current.value.replace(/\s+/g, '');
         const Password = password.current.value.replace(/\s+/g, '');
         const pwdConf = passwordConf.current.value.replace(/\s+/g, '');
         if (FirstName === '') {
             // 'Please enter name.'
-            ad.current.focus();
+            name.current.focus();
         } else if (LastName === '') {
             // 'Please enter surname.'
-            soyad.current.focus();
+            surname.current.focus();
+
         } else if (Username === '') {
             // 'Please enter username.'
             username.current.focus();
@@ -65,10 +70,12 @@ function Register() {
                 );
                 dispatch(
                     setCredentials({
-                        AccessToken: res.token,
-                        User: res.user,
+                        AccessToken: res.data.token,
+                        User: res.data.user,
                     }),
                 );
+                setCookie('jwt_token', res.data.token, 30);
+
                 navigate('/dashboard');
             } catch (error) {
                 console.error(error);
@@ -78,21 +85,21 @@ function Register() {
 
     /** Focus name input when component mounted. */
     useEffect(() => {
-        ad.current.focus();
+        name.current.focus();
     }, []);
 
     return (
         <AuthOutlet>
             <Stack direction="row" gap={3} sx={{ alignItems: 'center' }}>
                 <TextField
-                    inputRef={ad}
+                    inputRef={name}
                     label="Name"
                     type="text"
                     variant="outlined"
                     autoComplete="off"
                 />
                 <TextField
-                    inputRef={soyad}
+                    inputRef={surname}
                     label="Surname"
                     type="text"
                     variant="outlined"

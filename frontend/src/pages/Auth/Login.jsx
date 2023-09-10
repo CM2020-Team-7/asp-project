@@ -15,8 +15,12 @@ import { useEffect, useRef, useState } from 'react';
 import AuthOutlet from './AuthOutlet';
 import { useDispatch } from 'react-redux';
 import { userApiSlice } from '../../features/user/userApiSlice';
+import { useCookies } from 'react-cookie';
 
 function Login() {
+    const [cookies, setCookie] = useCookies(['jwt_token']);
+
+
     const username = useRef(null);
     const password = useRef(null);
     const navigate = useNavigate();
@@ -37,13 +41,23 @@ function Login() {
             password.current.focus();
         } else {
             try {
-                await dispatch(
+                const res = await dispatch(
+
                     userApiSlice.endpoints.login.initiate({
                         username: user,
                         password: pwd,
                     }),
                 );
-                navigate('/dashboard');
+
+                // dispatch(
+                //     setCredentials({
+                //         AccessToken: res.data.token,
+                //         User: user,
+                //     }),
+                // );
+                setCookie('jwt_token', res.data.token, 30);
+                window.location.reload();
+
             } catch (error) {
                 console.error(error);
             }

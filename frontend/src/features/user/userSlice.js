@@ -2,14 +2,20 @@
 /* eslint-disable no-nested-ternary */
 import { createSlice } from '@reduxjs/toolkit';
 
+const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+};
+
 const initialState = {
-    token: null,
+    token: getCookie('jwt_token'),
+
     user: {
         Id: import.meta.env.VITE_WEB_USER_ID,
         FirstName: '',
         LastName: '',
     },
-    isAuthenticated: false,
     mode: localStorage.getItem('mode')
         ? localStorage.getItem('mode')
         : window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -23,13 +29,13 @@ export const userSlice = createSlice({
     reducers: {
         setCredentials: (state, action) => {
             state.token = action.payload.AccessToken;
-            state.isAuthenticated = true;
             state.user = action.payload.User;
         },
         logOut: (state) => {
-            state.user = { Id: import.meta.env.VITE_WEB_USER_ID };
-            state.token = null;
-            localStorage.removeItem('user');
+            // state.user = { Id: import.meta.env.VITE_WEB_USER_ID };
+            // state.token = null;
+            // localStorage.removeItem('user');
+
         },
         setToken: (state, action) => {
             state.token = action.payload;
