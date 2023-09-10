@@ -13,9 +13,14 @@ import {
 } from '@/pages';
 import CreatePlan from '@/pages/Dashboard/CreatePlan';
 import { useSelector } from 'react-redux';
+import LearningPlanFull from '@/pages/LearningPlanFull/LearningPlanFull';
+import CreateModule from '@/pages/Dashboard/CreateModule';
+import ModuleFull from '@/pages/ModuleFull/ModuleFull';
 
 function Routing() {
-    const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
+    const token = useSelector((state) => state.user.token);
+    const isAuthenticated = !!token;
+
     return (
         <Routes>
             <Route
@@ -28,12 +33,42 @@ function Routing() {
                 path="dashboard"
                 element={isAuthenticated ? <Dashboard /> : <Login />}
             />
-            <Route path="dashboard/createPlan" element={<CreatePlan />} />
-            <Route path="template" element={<Template />} />
-            <Route path="templates" element={<Templates />} />
-            <Route path="resources" element={<Resources />} />
-            <Route path="contact" element={<Contact />} />
-            <Route path="about" element={<About />} />
+            <Route
+                path="dashboard/createPlan"
+                element={isAuthenticated ? <CreatePlan /> : <Login />}
+            />
+            <Route
+                path="dashboard/createModule"
+                element={isAuthenticated ? <CreateModule /> : <Login />}
+            />
+            <Route
+                path="template"
+                element={isAuthenticated ? <Template /> : <Login />}
+            />
+            <Route
+                path="templates"
+                element={isAuthenticated ? <Templates /> : <Login />}
+            />
+            <Route
+                path="resources"
+                element={isAuthenticated ? <Resources /> : <Login />}
+            />
+            <Route
+                path="contact"
+                element={isAuthenticated ? <Contact /> : <Login />}
+            />
+            <Route
+                path="about"
+                element={isAuthenticated ? <About /> : <Login />}
+            />
+            <Route
+                path="plan/:planId"
+                element={isAuthenticated ? <LearningPlanFull /> : <Login />}
+            />
+            <Route
+                path="module/:moduleId"
+                element={isAuthenticated ? <ModuleFull /> : <Login />}
+            />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="*" element={<Navigate to="/" />} />
