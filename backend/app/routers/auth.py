@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
-from typing import Union
+from fastapi import APIRouter, Header, HTTPException, status
 
 from ..auth.jwt_token_tools import get_auth_token
 from ..dao.dao import Dao
@@ -60,3 +59,7 @@ async def register(user: User) -> Union[User, dict]:
     response_data = {"user": result, "token": token}
 
     return response_data
+
+@router.get("/auth/logout", tags=["Authentication Service"])
+async def logout(authorization: str = Header(None)) -> LoginResponse:
+    return LoginResponse(token='')

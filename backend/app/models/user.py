@@ -31,10 +31,11 @@ class User(BaseModel):
         return self.get_password_hash(self.passwd)
 
     def get_password_hash(self, password: str) -> str:
+        assert password is not None, 'password must not be None.'
         passwd = hashlib.pbkdf2_hmac(
             'sha256',
             password.encode(),
-            str(self.id).encode().zfill(32),
+            '5up3rS3c|23T'.encode().zfill(32),
             100000,
             dklen=128,
         )
