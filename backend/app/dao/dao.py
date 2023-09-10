@@ -27,6 +27,7 @@ DELETE_PLAN = 'DELETE from Plan where id = ?'
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
 SELECT_MODULES = 'select * from module where ownerId = ?'
+SELECT_MODULE = 'select * from module where id = ?'
 DELETE_MODULE = 'delete from Module where id = ?'
 INSERT_MODULE = 'INSERT INTO Module ("ownerId", "title") VALUES (?, ?)'
 ASSOCIATE_MODULE = (
@@ -215,6 +216,31 @@ class Dao:
                     plan.modules = modules
                 plans.append(plan)
         return plans
+
+    def get_user_plan_by_id(self, user_id: str, plan_id: int) -> Plan:
+        results = self.__get_rows(SELECT_PLAN, str(plan_id))
+        plans = []
+
+        if results:
+            for row in results:
+                plan = Plan(**dict(row))
+                modules = self.get_plan_module_id_list(plan.id)
+                if modules:
+                    plan.modules = modules
+                plans.append(plan)
+        return plans[0]
+    
+    def get_user_module_by_id(self, user_id: str, module_id: int) -> Module:
+        results = self.__get_rows(SELECT_MODULE, str(module_id))
+        modules = []
+        if results:
+            for row in results:
+                module = Module(**dict(row))
+                lessons = self.get_module_lessons(module.id)
+                if lessons:
+                    module.lessons = lessons
+                modules.append(module)
+        return modules[0]
 
     def create_module(self, module: Module) -> Module:
         row_id = self.__write_data(INSERT_MODULE, (module.ownerId, module.title))

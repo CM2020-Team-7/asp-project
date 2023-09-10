@@ -6,20 +6,26 @@ import {
     Toolbar,
     Typography,
     ButtonGroup,
+    IconButton,
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import { userApiSlice } from '@/features/user/userApiSlice';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import { changeMode, selectMode } from '@/features/user/userSlice';
+import { useCookies } from 'react-cookie';
 
 const Navbar = () => {
     const navigate = useNavigate();
-    const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
+    const token = useSelector((state) => state.user.token);
     const dispatch = useDispatch();
-    const handleLogoutClick = () => {
-        dispatch(userApiSlice.endpoints.logout.initiate());
-        navigate('/');
+    const [cookie, setCookie, removeCookie] = useCookies();
+    const handleLogoutClick = async () => {
+        await dispatch(userApiSlice.endpoints.logout.initiate());
+        removeCookie('jwt_token', { path: '/' });
+        window.location.reload();
     };
+    const mode = useSelector(selectMode);
 
     return (
         <AppBar position="sticky" color="primary">
@@ -34,7 +40,7 @@ const Navbar = () => {
                         UpSkill
                     </Typography>
                     <ButtonGroup variant="text" color="inherit">
-                        {isAuthenticated ? (
+                        {!!token ? (
                             <>
                                 <Button
                                     component={RouterLink}
@@ -42,35 +48,6 @@ const Navbar = () => {
                                     color="inherit"
                                 >
                                     Dashboard
-                                </Button>
-                                <Button
-                                    component={RouterLink}
-                                    to="/templates"
-                                    color="inherit"
-                                >
-                                    Templates
-                                </Button>
-                                <Button
-                                    component={RouterLink}
-                                    to="/resources"
-                                    color="inherit"
-                                >
-                                    Resources
-                                </Button>
-                                <Button
-                                    component={RouterLink}
-                                    to="/contact"
-                                    color="inherit"
-                                >
-                                    Contact
-                                </Button>
-                                <Button
-                                    component={RouterLink}
-                                    to="/about"
-                                    color="inherit"
-                                    sx={{ mr: 4 }}
-                                >
-                                    About
                                 </Button>
                                 <Button
                                     color="inherit"
@@ -98,6 +75,17 @@ const Navbar = () => {
                             </>
                         )}
                     </ButtonGroup>
+                    <IconButton onClick={() => dispatch(changeMode())}>
+                        <Brightness4Icon
+                            sx={{
+                                transition: 'transform 0.4s',
+                                transform:
+                                    mode === 'dark'
+                                        ? 'rotateY(180deg)'
+                                        : 'rotateY(0deg)',
+                            }}
+                        />
+                    </IconButton>
                 </Toolbar>
             </Container>
         </AppBar>

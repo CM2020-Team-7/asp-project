@@ -6,6 +6,7 @@ from ..dao.exceptions import DuplicateDataError
 from ..models.login_request import LoginRequest
 from ..models.login_response import LoginResponse
 from ..models.user import User
+from typing import Union
 
 router = APIRouter()
 dao = Dao()
