@@ -27,6 +27,7 @@ DELETE_PLAN = 'DELETE from Plan where id = ?'
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
 SELECT_MODULES = 'select * from module where ownerId = ?'
+DELETE_MODULE = 'delete from Module where id = ?'
 INSERT_MODULE = 'INSERT INTO Module ("ownerId", "title") VALUES (?, ?)'
 ASSOCIATE_MODULE = (
     'INSERT INTO ModulePlanAssociation ("planId", "moduleId") VALUES (?, ?)'
@@ -34,13 +35,16 @@ ASSOCIATE_MODULE = (
 DISASSOCIATE_MODULE = (
     'DELETE FROM ModulePlanAssociation where planId = ? and moduleId = ?'
 )
+DELETE_ASSOCIATION_BY_MODULE_ID = 'DELETE FROM ModulePlanAssociation where moduleId = ?'
 DELETE_ASSOCIATION_BY_PLANID = 'DELETE FROM ModulePlanAssociation where planId = ?'
 
 SELECT_LESSON_ROWID = 'select * from lesson where rowid = ?'
+SELECT_LESSON_ID = 'select * from lesson where id = ?'
 INSERT_LESSON = (
     'INSERT INTO Lesson ("ownerId", "moduleId", "title", "content") VALUES (?, ?, ?, ?)'
 )
 SELECT_MODULE_LESSONS = 'select * from lesson where moduleId = ?'
+DELETE_LESSON = 'delete from Lesson where id = ?'
 
 SELECT_ENROLLMENT_ROWID = 'select * from Enrollment where rowid = ?'
 INSERT_ENROLLMENT = (
@@ -52,6 +56,7 @@ UPDATE_ENROLLMENT = (
 SELECT_ENROLLMENT = 'select * from Enrollment where id = ?'
 SELECT_ENROLLMENTS = 'select * from Enrollment where userId = ?'
 DELETE_ENROLLMENT = 'DELETE from Enrollment where id = ?'
+DELETE_ENROLLMENT_MODULE = 'DELETE from Enrollment where moduleId = ?'
 DELETE_ENROLLMENT_PLAN = 'DELETE from Enrollment where planId = ?'
 
 
@@ -216,6 +221,18 @@ class Dao:
         result = self.__get_row(SELECT_MODULE_ROWID, (row_id,))
         return Module(**dict(result))
 
+    def delete_module(self, module_id: int) -> bool:
+        cur = self.__get_cursor()
+        try:
+            cur.execute(DELETE_ASSOCIATION_BY_MODULE_ID, (module_id,))
+            cur.execute(DELETE_ENROLLMENT_MODULE, (module_id,))
+            cur.execute(DELETE_MODULE, (module_id,))
+            cur.connection.commit()
+        except:
+            cur.connection.rollback()
+            return False
+        return True
+
     def get_user_modules(self, user_id: str) -> List[Module]:
         results = self.__get_rows(SELECT_MODULES, (user_id,))
         modules = []
@@ -235,6 +252,16 @@ class Dao:
         )
         result = self.__get_row(SELECT_LESSON_ROWID, (row_id,))
         return Lesson(**dict(result))
+
+    def delete_lesson(self, lesson_id: int) -> bool:
+        self.__write_data(DELETE_LESSON, (lesson_id,))
+        return True
+
+    def get_lesson_by_id(self, lesson_id: int) -> Union[Lesson, None]:
+        result = self.__get_row(SELECT_LESSON_ID, (lesson_id,))
+        if result:
+            return Lesson(**dict(result))
+        return None
 
     def get_module_lessons(self, module_id: int) -> Union[List[Lesson], None]:
         stored_lessons = None

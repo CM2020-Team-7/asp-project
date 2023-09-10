@@ -119,6 +119,38 @@ async def create_module(module: Module, authorization: str = Header(None)) -> Pl
     return result
 
 
+@router.delete("/content/modules/{module_id}", tags=["Content Service"])
+async def delete_module(module_id: int, authorization: str = Header(None)) -> Response:
+    """
+    Delete a module for the userId provided in the token.
+
+    - **authorization**: valid token from auth request.
+    - **module_id**: id of the module to delete. Must exist for that user.
+    """
+    user_id = verify_and_read_token(authorization)
+    user_modules = dao.get_user_modules(user_id)
+    module_found = False
+    for module in user_modules:
+        if module.id == module_id:
+            module_found = True
+            if dao.delete_module(module_id):
+                return Response(
+                    status="SUCCESS",
+                    message="Successfully deleted moduleId" + str(module_id),
+                )
+            break  # Found, no need to continue looping if dao call unsuccessful.
+    if not module_found:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="module with provided ID does not exist for this user.",
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="unable to delete module.",
+        )
+
+
 @router.post("/content/lessons", tags=["Content Service"])
 async def create_lesson(lesson: Lesson, authorization: str = Header(None)) -> Lesson:
     """
@@ -137,6 +169,37 @@ async def create_lesson(lesson: Lesson, authorization: str = Header(None)) -> Le
     return result
 
 
+@router.delete("/content/lessons/{lesson_id}", tags=["Content Service"])
+async def delete_lesson(lesson_id: int, authorization: str = Header(None)) -> Lesson:
+    """
+    delete a lesson for the userId provided in the token.
+
+    - **authorization**: valid token from auth request.
+    - **lesson_id**: id of the lesson to delete, must exist for the user.
+    """
+    user_id = verify_and_read_token(authorization)
+    lesson = dao.get_lesson_by_id(lesson_id)
+
+    if not lesson:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="lesson with provided ID does not exist.",
+        )
+
+    if lesson.ownerId != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User requesting update does not own lesson provided.",
+        )
+    if dao.delete_lesson(lesson_id):
+        return Response(
+            status="SUCCESS", message="Successfully deleted lesson: " + str(lesson_id)
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete lesson",
+        )
 def validate_provided_plan(
     user_id: int, plan: Optional[Plan] = None, plan_id: Optional[int] = None
 ) -> bool:
