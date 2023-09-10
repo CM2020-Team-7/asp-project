@@ -1,8 +1,5 @@
 ## ASP Project
 
-![viterjs-template](https://i.ibb.co/xMMGs2Q/Screenshot-2023-07-07-105634.png)
-
-
 #### Install Dependencies
 
 ```
@@ -14,7 +11,6 @@ pnpm install
 ```
 pnpm dev
 ```
-
 
 ### Scripts
 

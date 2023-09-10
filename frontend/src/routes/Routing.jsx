@@ -11,11 +11,11 @@ import {
     About,
     Templates,
 } from '@/pages';
-import { useAuth } from '@/providers/AuthProvider';
 import CreatePlan from '@/pages/Dashboard/CreatePlan';
+import { useSelector } from 'react-redux';
 
 function Routing() {
-    const { isAuthenticated } = useAuth();
+    const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
     return (
         <Routes>
             <Route

@@ -37,7 +37,7 @@ async def authenticate(request: LoginRequest) -> LoginResponse:
 
 
 @router.post("/auth/register", tags=["Authentication Service"])
-async def register(user: User) -> User:
+async def register(user: User) -> Union[User, dict]:
     """
     Register a user with the system.
 
@@ -55,7 +55,10 @@ async def register(user: User) -> User:
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User with username [{user.username}] already exists.",
         )
-    return result
+    token=get_auth_token(user.id)
+    response_data = {"user": result, "token": token}
+
+    return response_data
 
 
 @router.get("/auth/logout", tags=["Authentication Service"])

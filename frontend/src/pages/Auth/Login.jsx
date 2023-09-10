@@ -11,46 +11,56 @@ import {
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useNavigate } from 'react-router-dom';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AuthOutlet from './AuthOutlet';
-import { useAuth } from '@/providers/AuthProvider';
+import { useDispatch } from 'react-redux';
+import { userApiSlice } from '../../features/user/userApiSlice';
 
 function Login() {
-    const email = useRef(null);
+    const username = useRef(null);
     const password = useRef(null);
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const handleClickShowPassword = () => setShowPassword(!showPassword);
     const handleMouseDownPassword = () => setShowPassword(!showPassword);
-    const { handleLogin } = useAuth();
+    const dispatch = useDispatch();
 
     const loginHandler = async (e) => {
         e.preventDefault();
-        const user = email.current.value.replace(/\s+/g, '');
+        const user = username.current.value.replace(/\s+/g, '');
         const pwd = password.current.value.replace(/\s+/g, '');
         if (user === '') {
-            // Please enter your email.
-            email.current.focus();
+            // Please enter your username.
+            username.current.focus();
         } else if (pwd === '') {
             // 'Please enter your password.'
             password.current.focus();
         } else {
-            handleLogin();
-            navigate('/dashboard');
+            try {
+                await dispatch(
+                    userApiSlice.endpoints.login.initiate({
+                        username: user,
+                        password: pwd,
+                    }),
+                );
+                navigate('/dashboard');
+            } catch (error) {
+                console.error(error);
+            }
         }
     };
 
-    /** Focus email input when component mounted. */
+    /** Focus username input when component mounted. */
     useEffect(() => {
-        email.current.focus();
+        username.current.focus();
     }, []);
 
     return (
         <AuthOutlet>
             <TextField
-                inputRef={email}
-                type="email"
-                label="E-mail"
+                inputRef={username}
+                type="username"
+                label="Username"
                 variant="outlined"
                 autoComplete="off"
             />
