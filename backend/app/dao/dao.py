@@ -22,6 +22,7 @@ SELECT_PLAN = 'select * from plan where id = ?'
 INSERT_PLAN = 'INSERT INTO Plan ("ownerId", "title") VALUES (?, ?)'
 SELECT_PLAN_MODULE_IDS = 'select moduleId from ModulePlanAssociation where planId = ?'
 UPDATE_PLAN = 'UPDATE Plan SET title = ? where id = ?'
+DELETE_PLAN = 'DELETE from Plan where id = ?'
 
 
 SELECT_MODULE_ROWID = 'select * from module where rowid = ?'
@@ -33,6 +34,7 @@ ASSOCIATE_MODULE = (
 DISASSOCIATE_MODULE = (
     'DELETE FROM ModulePlanAssociation where planId = ? and moduleId = ?'
 )
+DELETE_ASSOCIATION_BY_PLANID = 'DELETE FROM ModulePlanAssociation where planId = ?'
 
 SELECT_LESSON_ROWID = 'select * from lesson where rowid = ?'
 INSERT_LESSON = (
@@ -50,6 +52,7 @@ UPDATE_ENROLLMENT = (
 SELECT_ENROLLMENT = 'select * from Enrollment where id = ?'
 SELECT_ENROLLMENTS = 'select * from Enrollment where userId = ?'
 DELETE_ENROLLMENT = 'DELETE from Enrollment where id = ?'
+DELETE_ENROLLMENT_PLAN = 'DELETE from Enrollment where planId = ?'
 
 
 class Dao:
@@ -167,6 +170,18 @@ class Dao:
         self.__write_data(UPDATE_PLAN, (plan.title, plan.id))
         self.update_plan_modules(plan.id, plan.modules)
         return self.get_plan(plan.id)
+
+    def delete_plan(self, plan_id: int) -> bool:
+        cur = self.__get_cursor()
+        try:
+            cur.execute(DELETE_ASSOCIATION_BY_PLANID, (plan_id,))
+            cur.execute(DELETE_ENROLLMENT_PLAN, (plan_id,))
+            cur.execute(DELETE_PLAN, (plan_id,))
+            cur.connection.commit()
+        except:
+            cur.connection.rollback()
+            return False
+        return True
 
     def update_plan_modules(
         self, plan_id: int, new_module_list: Union[List[int], None]

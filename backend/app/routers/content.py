@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Header, HTTPException, status
 
@@ -8,6 +8,7 @@ from ..dao.exceptions import InvalidPlanIdModuleIdAssociationError
 from ..models.lesson import Lesson
 from ..models.module import Module
 from ..models.plan import Plan
+from ..models.response import Response
 
 router = APIRouter()
 dao = Dao()
@@ -30,6 +31,28 @@ async def create_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
     return result
 
 
+@router.delete("/content/plans/{plan_id}", tags=["Content Service"])
+async def delete_plan(plan_id: int, authorization: str = Header(None)) -> Response:
+    """
+    Delete a plan for the userId provided in the token.
+
+    - **authorization**: valid token from auth request.
+    - **plan_id**: planId to use to lookup plan.
+    """
+    user_id = verify_and_read_token(authorization)
+    validate_provided_plan(user_id, plan_id=plan_id)
+
+    if dao.delete_plan(plan_id):
+        return Response(
+            status="SUCCESS", message="Successfully deleted planId: " + str(plan_id)
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error encountered deleting plan.",
+        )
+
+
 @router.put("/content/plans", tags=["Content Service"])
 async def update_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
     """
@@ -43,26 +66,7 @@ async def update_plan(plan: Plan, authorization: str = Header(None)) -> Plan:
     All other fields are ignored when provided, and returned based on what is updated.
     """
     user_id = verify_and_read_token(authorization)
-
-    if not plan.id:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="planId must be provided to update an existing plan.",
-        )
-
-    stored_plan = dao.get_plan(plan.id)
-
-    if not stored_plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Plan with provided ID does not exist.",
-        )
-
-    if stored_plan.ownerId != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User requesting update does not own plan provided.",
-        )
+    validate_provided_plan(user_id, plan=plan)
 
     try:
         result = dao.update_plan(plan)
@@ -131,3 +135,38 @@ async def create_lesson(lesson: Lesson, authorization: str = Header(None)) -> Le
     lesson.ownerId = user_id
     result = dao.create_lesson(lesson)
     return result
+
+
+def validate_provided_plan(
+    user_id: int, plan: Optional[Plan] = None, plan_id: Optional[int] = None
+) -> bool:
+
+    assert (
+        plan is not None or plan_id is not None
+    ), 'Either plan or planId must be provided to validate.'
+
+    if plan:
+        req_plan_id = plan.id
+    else:
+        req_plan_id = plan_id
+
+    if not req_plan_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="planId must be provided to update an existing plan.",
+        )
+
+    stored_plan = dao.get_plan(req_plan_id)
+
+    if not stored_plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Plan with provided ID does not exist.",
+        )
+
+    if stored_plan.ownerId != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User requesting update does not own plan provided.",
+        )
+    return True
