@@ -12,7 +12,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { userApiSlice } from '@/features/user/userApiSlice';
 import { useSelector, useDispatch } from 'react-redux';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
-import { changeMode, selectMode } from '@/features/user/userSlice';
+import { changeMode, selectMode, setToken } from '@/features/user/userSlice';
 import { useCookies } from 'react-cookie';
 
 const Navbar = () => {
@@ -23,8 +23,7 @@ const Navbar = () => {
     const handleLogoutClick = async () => {
         await dispatch(userApiSlice.endpoints.logout.initiate());
         removeCookie('jwt_token', { path: '/' });
-        window.location.reload();
-
+        dispatch(setToken(null));
     };
     const mode = useSelector(selectMode);
 

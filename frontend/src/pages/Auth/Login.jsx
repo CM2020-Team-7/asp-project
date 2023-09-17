@@ -16,10 +16,10 @@ import AuthOutlet from './AuthOutlet';
 import { useDispatch } from 'react-redux';
 import { userApiSlice } from '../../features/user/userApiSlice';
 import { useCookies } from 'react-cookie';
+import { setToken } from '@/features/user/userSlice';
 
 function Login() {
     const [cookies, setCookie] = useCookies(['jwt_token']);
-
 
     const username = useRef(null);
     const password = useRef(null);
@@ -42,22 +42,16 @@ function Login() {
         } else {
             try {
                 const res = await dispatch(
-
                     userApiSlice.endpoints.login.initiate({
                         username: user,
                         password: pwd,
                     }),
                 );
 
-                // dispatch(
-                //     setCredentials({
-                //         AccessToken: res.data.token,
-                //         User: user,
-                //     }),
-                // );
+                dispatch(setToken(res.data.token));
                 setCookie('jwt_token', res.data.token, 30);
-                window.location.reload();
-
+                navigate('/dashboard');
+                // window.location.reload();
             } catch (error) {
                 console.error(error);
             }
